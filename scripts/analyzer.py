@@ -4,14 +4,14 @@ import pandas as pd
 
 
 class RatingObj:
-    def __int__(self, value, wear, count):
+    def __init__(self, value, wear, count):
         self.value = value
         self.wear = wear
         self.count = count
 
 
 class CollectionObj:
-    def __int__(self, collection, value, wear, count):
+    def __init__(self, collection, value, wear, count):
         self.collection = collection
         self.value = value
         self.wear = wear
@@ -54,11 +54,7 @@ for item in resp_json['descriptions']:
             break
 
     if not found:
-        insert_obj = CollectionObj()
-        insert_obj.collection = case_collection
-        insert_obj.wear = wear_rating
-        insert_obj.value = value_rating
-        insert_obj.count = 1
+        insert_obj = CollectionObj(collection=case_collection, wear=wear_rating, value=value_rating, count=1)
         collection_list.append(insert_obj)
 
     # case collection aggregate light
@@ -70,10 +66,7 @@ for item in resp_json['descriptions']:
             break
 
     if not found:
-        insert_obj = CollectionObj()
-        insert_obj.collection = case_collection
-        insert_obj.value = value_rating
-        insert_obj.count = 1
+        insert_obj = CollectionObj(collection=case_collection, wear=None, value=value_rating, count=1)
         collection_list_light.append(insert_obj)
 
     # wear rating aggregate
@@ -85,10 +78,7 @@ for item in resp_json['descriptions']:
             break
 
     if not found:
-        insert_obj = RatingObj()
-        insert_obj.wear = wear_rating
-        insert_obj.value = value_rating
-        insert_obj.count = 1
+        insert_obj = RatingObj(wear=wear_rating, value=value_rating, count=1)
         rating_list.append(insert_obj)
 
     # wear rating aggregate light
@@ -100,9 +90,7 @@ for item in resp_json['descriptions']:
             break
 
     if not found:
-        insert_obj = RatingObj()
-        insert_obj.value = value_rating
-        insert_obj.count = 1
+        insert_obj = RatingObj(wear=None, value=value_rating, count=1)
         rating_list_light.append(insert_obj)
 
 if len(rating_list) > 0:
