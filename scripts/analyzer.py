@@ -18,7 +18,10 @@ class CollectionObj:
         self.count = count
 
 
-profile_id = '76561199029580336'
+limit_ten = True
+
+profile_id = input("Enter Your Profile Id: ").strip()
+
 url = f"http://steamcommunity.com/inventory/{profile_id}/730/2?l=english&count=1000"
 response = get(url)
 resp_json = json.loads(response.text)
@@ -26,6 +29,12 @@ rating_list = []
 collection_list = []
 rating_list_light = []
 collection_list_light = []
+skip_list = ['covert', 'music kit', 'base grade graffiti', 'extraordinary collectible', 'extraordinary gloves']
+
+rarity_wear_df = pd.DataFrame()
+rarity_light_df = pd.DataFrame()
+collection_df = pd.DataFrame()
+collection_light_df = pd.DataFrame()
 
 for item in resp_json['descriptions']:
     wear_rating = item['descriptions'][0]['value'].replace('Exterior: ', '')
@@ -42,6 +51,10 @@ for item in resp_json['descriptions']:
     value_rating = value_rating.replace(' Rifle', '')
     value_rating = value_rating.replace(' SMG', '')
     value_rating = value_rating.replace(' Shotgun', '')
+    value_rating = value_rating.replace('™', '')
+    # skip list
+    if any(i in value_rating.lower() for i in skip_list):
+        continue
 
     # case collection aggregate
     found = False
@@ -93,48 +106,56 @@ for item in resp_json['descriptions']:
         insert_obj = RatingObj(wear=None, value=value_rating, count=1)
         rating_list_light.append(insert_obj)
 
-if len(rating_list) > 0:
-    df = pd.DataFrame()
-    for obj in rating_list:
-        df = pd.concat([df, pd.DataFrame([[
-            obj.value,
-            obj.wear,
-            obj.count
-        ]], columns=['Rarity', 'Wear', 'Count'])])
+# build the data frames for easy json output
+for obj in rating_list:
+    if limit_ten and obj.count < 10:
+        continue
+    rarity_wear_df = pd.concat([rarity_wear_df, pd.DataFrame([[
+        obj.value,
+        obj.wear,
+        obj.count
+    ]], columns=['Rarity', 'Wear', 'Count'])])
 
-    df.to_excel('output/Rarity + Wear.xlsx', index=False)
+for obj in rating_list_light:
+    if limit_ten and obj.count < 10:
+        continue
+    rarity_light_df = pd.concat([rarity_light_df, pd.DataFrame([[
+        obj.value,
+        obj.count
+    ]], columns=['Rarity', 'Count'])])
 
-if len(rating_list_light) > 0:
-    df = pd.DataFrame()
-    for obj in rating_list_light:
-        df = pd.concat([df, pd.DataFrame([[
-            obj.value,
-            obj.count
-        ]], columns=['Rarity', 'Count'])])
+for obj in collection_list:
+    if limit_ten and obj.count < 10:
+        continue
+    collection_df = pd.concat([collection_df, pd.DataFrame([[
+        obj.collection,
+        obj.value,
+        obj.wear,
+        obj.count
+    ]], columns=['Collection', 'Rarity', 'Wear', 'Count'])])
 
-    df.to_excel('output/Rarity Light.xlsx', index=False)
+for obj in collection_list_light:
+    if limit_ten and obj.count < 10:
+        continue
+    collection_light_df = pd.concat([collection_light_df, pd.DataFrame([[
+        obj.collection,
+        obj.value,
+        obj.count
+    ]], columns=['Collection', 'Rarity', 'Count'])])
 
-if len(collection_list) > 0:
-    df = pd.DataFrame()
-    for obj in collection_list:
-        df = pd.concat([df, pd.DataFrame([[
-            obj.collection,
-            obj.value,
-            obj.wear,
-            obj.count
-        ]], columns=['Collection', 'Rarity', 'Wear', 'Count'])])
-
-    df.to_excel('output/Collection + Rarity + Wear.xlsx', index=False)
-
-if len(collection_list_light) > 0:
-    df = pd.DataFrame()
-    for obj in collection_list_light:
-        df = pd.concat([df, pd.DataFrame([[
-            obj.collection,
-            obj.value,
-            obj.count
-        ]], columns=['Collection', 'Rarity', 'Count'])])
-
-    df.to_excel('output/Collection + Rarity.xlsx', index=False)
-
-print()
+while True:
+    print("Group By:\n1. Rarity\n2. Rarity + Wear\n3. Rarity + Collection\n4. Rarity + Collection + Wear\n0. Exit")
+    choice = input("Please Enter Your Selection Number: ").strip()
+    match choice:
+        case '0':
+            exit(0)
+        case '1':
+            print(json.dumps(json.loads(rarity_light_df.to_json(orient='records')), indent=4))
+        case '2':
+            print(json.dumps(json.loads(rarity_wear_df.to_json(orient='records')), indent=4))
+        case '3':
+            print(json.dumps(json.loads(collection_light_df.to_json(orient='records')), indent=4))
+        case '4':
+            print(json.dumps(json.loads(collection_df.to_json(orient='records')), indent=4))
+        case _:
+            print("Please Enter A Value 1-4 Or 0 To Exit")
